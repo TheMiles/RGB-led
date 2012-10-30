@@ -98,6 +98,8 @@ class MainWindow:
         data_buffer = Gtk.TextBuffer()
         textview.set_buffer(data_buffer)
 
+        scrollbar = self.builder.get_object('scrolledwindow1').get_vadjustment()
+
         last_received = ""
         buffer = ""
         while True:
@@ -106,6 +108,7 @@ class MainWindow:
                 if '\n' in buffer:
                     last_received, buffer = buffer.split('\n')[-2:]
                     data_buffer.insert(data_buffer.get_end_iter(), last_received)
+                    scrollbar.set_value(adj.upper - adj.page_size)
             if self.quitting:
                 break
 
