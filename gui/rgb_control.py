@@ -18,9 +18,12 @@ import os, sys
 import serial
 
 from gi.repository import Gtk
+from gi.repository import Gdk
 from gi.repository import GObject
 
 from threading import Thread
+
+Gdk.threads_init()
 
 SPEED = 9600
 
@@ -54,8 +57,8 @@ class MainWindow:
 
     def channel_changed(self, adjustment):
 
-        self.send_command("c %i" % adjustment.channel)
-        self.send_command("v %i" % adjustment.get_value())
+        self.send_command("c%i" % adjustment.channel)
+        self.send_command("v%i" % adjustment.get_value())
 
 
     def connect_serial(self, button):
@@ -76,7 +79,7 @@ class MainWindow:
 
         try:
             port = self.builder.get_object('serialPort').get_text()
-            self.connection = serial.Serial(port, SPEED, timeout=0, stopbits=serial.STOPBITS_TWO)
+            self.connection = serial.Serial(port, SPEED, timeout=0, stopbits=serial.STOPBITS_ONE)
             button.set_label("Disconnect")
             set_sensitive(True)
         except serial.serialutil.SerialException, e:
@@ -94,23 +97,28 @@ class MainWindow:
 
     def receive_data(self):
 
-        textview = self.builder.get_object('textview1')
-        data_buffer = Gtk.TextBuffer()
-        textview.set_buffer(data_buffer)
-
-        scrollbar = self.builder.get_object('scrolledwindow1').get_vadjustment()
-
-        last_received = ""
         buffer = ""
         while True:
             if self.connection:
                 buffer += self.connection.read(self.connection.inWaiting())
-                if '\n' in buffer:
-                    last_received, buffer = buffer.split('\n')[-2:]
-                    data_buffer.insert(data_buffer.get_end_iter(), last_received)
-                    scrollbar.set_value(adj.upper - adj.page_size)
+                buffer_list = buffer.split('\n')
+                for line in map(lambda x: x.replace("\r", ""), buffer_list[:-1]):
+                    GObject.idle_add(self.update_data_buffer, line)
+                    print line
+                buffer = buffer_list[-1]
             if self.quitting:
                 break
+
+
+    def update_data_buffer(self, data):
+
+        textview = self.builder.get_object('textview1')
+        data_buffer = Gtk.TextBuffer()
+        textview.set_buffer(data_buffer)
+        scrollbar = self.builder.get_object('scrolledwindow1').get_vadjustment()
+
+        data_buffer.insert(data_buffer.get_end_iter(), data)
+        #scrollbar.set_value(scrollbar.upper - scrollbar.page_size)
 
 
 if __name__ == '__main__':
@@ -121,3 +129,4 @@ if __name__ == '__main__':
 
     MainWindow()
     Gtk.main()
+    

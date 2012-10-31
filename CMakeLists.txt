@@ -21,9 +21,7 @@ print_programmer_list()
 #set(ARDUINO_DEFAULT_PORT /dev/ttyUSB0) # Default Port, when not specified
 
 generate_arduino_firmware(RGB_serial
-    #SRCS RGB_serial.c
-    SKETCH .
-    PORT /dev/ttyUSB0
-    #LIBS blink_lib
-    BOARD atmega328
-    )
+                          SKETCH .
+                          PORT /dev/ttyUSB0
+                          BOARD atmega328
+                         )
